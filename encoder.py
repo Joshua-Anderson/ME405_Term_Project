@@ -8,10 +8,13 @@
 
 import pyb
 
+## This is specific to our SUMO bot with 2 in diameter wheels and specific encoder ticks/rev
+INCHES_PER_TICK = 0.006413900601
+
 class Encoder:
     """ This class allows users to access encoder readings. It automatically
     configures the encoder based on the user-given arguments. """
-    def __init__(self, pinA, pinB, af_num, tmr_num, bound=1000):
+    def __init__(self, pinA, pinB, af_num, tmr_num, bound=1000, invert=False):
         """ Sets up the user desired timer and pin for a quadature encoder scheme
         with a 16 bit counter.
 
@@ -25,6 +28,7 @@ class Encoder:
          but it's more likely the motor moving at fast speed would be mistaken
          for the encoder value wrapping around its max value.
          See mainpage limitations section for more details
+        @param invert invert the encoders direction
         """
 
         pinA.init(mode = pyb.Pin.AF_PP, pull = pyb.Pin.PULL_NONE, af=af_num)
@@ -35,6 +39,7 @@ class Encoder:
         self._pos = 0
         self._lastcount = self._tmr.counter()
         self._bound = bound
+        self._invert = invert
 
 
     def read(self):
@@ -43,13 +48,18 @@ class Encoder:
 
         @return returns the current position of the motor (encoder count) """
         timer_max = 65535
+
         count = self._tmr.counter()
+
         if self._lastcount > timer_max - self._bound and count < self._bound:
             delta = (timer_max - self._lastcount + count)
         elif count > timer_max - self._bound  and self._lastcount < self._bound:
             delta = -1*(timer_max - count + self._lastcount)
         else:
             delta = count - self._lastcount
+
+        if self._invert:
+            delta *= -1
         self._pos = self._pos + delta
         self._lastcount = count
         return self._pos
@@ -58,8 +68,35 @@ class Encoder:
         """ Resets the encoder position variable to zero. """
         self._pos = 0
 
+def read():
+    """ Task used to read encoders """
+    global LeftVal
+    global RightVal
+
+    LeftVal = Left.read()
+    RightVal = Right.read()
+
+def ticks_to_in(ticks):
+    """ Convert from encoder ticks to inches
+
+    @param ticks encoder ticks"""
+
+    return ticks*INCHES_PER_TICK
+
+def in_to_ticks(inches):
+    """ Convert from inches to encoder ticks
+
+    @param inches distance in inches"""
+    return inches/INCHES_PER_TICK
+
 ## SUMO Bot Left Motor
 Left = Encoder(pyb.Pin.board.PC6, pyb.Pin.board.PC7, pyb.Pin.AF3_TIM8, 8)
 
+## SUMO Bot Left Encoder Value
+LeftVal = 0
+
 ## SUMO Bot Right Motor
-Right = Encoder(pyb.Pin.board.PB6, pyb.Pin.board.PB7, pyb.Pin.AF2_TIM4, 4)
+Right = Encoder(pyb.Pin.board.PB6, pyb.Pin.board.PB7, pyb.Pin.AF2_TIM4, 4, invert=True)
+
+## SUMO Bot Right Encoder Value
+RightVal = 0

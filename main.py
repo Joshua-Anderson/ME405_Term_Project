@@ -11,6 +11,8 @@ import task_share
 import utime
 import gc
 import ir
+import drive
+import motor_driver
 
 from micropython import alloc_emergency_exception_buf
 alloc_emergency_exception_buf (100)
@@ -18,9 +20,15 @@ alloc_emergency_exception_buf (100)
 if __name__ == '__main__':
     ir.init()
 
-    # Task scheduler setups
+
+    drive.DriveCommand = drive.ForwardDistance(6)
+
+    drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 10,
+                        profile = True, trace = False)
     ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 1, period = 10,
                         profile = True, trace = False)
+
+    cotask.task_list.append(drive_task)
     cotask.task_list.append(ir_task)
 
     # Python's memory management for unused variables
@@ -33,6 +41,11 @@ if __name__ == '__main__':
         cotask.task_list.pri_sched()
     # Empty the comm port buffer of the character(s) just pressed
     vcp.read ()
+
+    # Stop motors on program exit
+    motor_driver.Left.set_duty_cycle(0)
+    motor_driver.Right.set_duty_cycle(0)
+
     # Print a table of task data and a table of shared information data
     print ('\n' + str (cotask.task_list) + '\n')
     print (task_share.show_all())
