@@ -10,22 +10,16 @@ import cotask
 import task_share
 import utime
 import gc
-
 import ir
 
 from micropython import alloc_emergency_exception_buf
 alloc_emergency_exception_buf (100)
 
-IR_TMR_FREQ = 1000000
-IR_TM_CH_1 = None
-IR_QUEUE = task_share.Queue('I', 68, overwrite = False)
-IR_QUEUE_EMPTY_TIME = 0
-
 if __name__ == '__main__':
     ir.init()
 
     # Task scheduler setups
-    ir_task = cotask.Task(ir.handler, name = 'Task 1', priority = 1, period = 10,
+    ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 1, period = 10,
                         profile = True, trace = False)
     cotask.task_list.append(ir_task)
 

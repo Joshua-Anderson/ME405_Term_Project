@@ -1,21 +1,33 @@
+"""
+@file ir.py
+@author Josh Anderson
+@author Ethan Czuppa
+
+This file contains the logic for handling the interrupts created by an IR remote sensor.
+"""
+
 
 import pyb
 import utime
 import task_share
 
+IR_TMR_CH = None
 IR_TMR_FREQ = 1000000
-IR_TM_CH_1 = None
 IR_QUEUE = task_share.Queue('I', 68, overwrite = False)
 IR_QUEUE_EMPTY_TIME = 0
+IR_START_CMD = 48
+IR_STARTED = False
 
 def init():
+    global IR_TMR_CH
+
     ir_tmr = pyb.Timer(2, prescaler=79, period=65535)
-    IR_TM_CH_1 = ir_tmr.channel(3, pyb.Timer.IC, pin=pyb.Pin.board.PA2, polarity = pyb.Timer.BOTH)
-    IR_TM_CH_1.callback(irq)
+    IR_TMR_CH = ir_tmr.channel(3, pyb.Timer.IC, pin=pyb.Pin.board.PA2, polarity = pyb.Timer.BOTH)
+    IR_TMR_CH.callback(irq)
 
 def irq(a):
     """Takes data from IR reciever and puts in queue"""
-    IR_QUEUE.put(IR_TM_CH_1.capture(), in_ISR = True)
+    IR_QUEUE.put(IR_TMR_CH.capture(), in_ISR = True)
 
 def handler():
     """
@@ -24,6 +36,8 @@ def handler():
     command complement are all displayed along with the decimal representation of
     the command and address.
     """
+    global IR_STARTED
+
     while True:
         yield(0)
         cur_time = utime.ticks_ms()
@@ -37,29 +51,22 @@ def handler():
             pulses = evt_time_to_pulse_len(ir_evt_list)
             pulses_ms = ticks_to_ms(pulses, IR_TMR_FREQ)
             packet = psls_to_logic_in_dct(pulses_ms)
-            # formatted Print Statement for Displaying Data for IR packet recieved and decoded
-            print(" "+"--------NEW PACKET---------"+"\r\n",
-                  "RAW: " + str(bin(packet['raw'])) + "\r\n","\r\n",
-                  "ADDR: " + str(bin(packet['addr'])) + "\r\n",
-                  "nADDR: " + str(bin(packet['naddr'])) + "\r\n",
-                  "CMD: " + str(bin(packet['cmd'])) + "\r\n",
-                  "nCMD: " + str(bin(packet['ncmd'])) + "\r\n","\r\n",
-                  "Address (Decimal): " + str(packet['addr']) + "\r\n",
-                  "Command (Decimal): " + str(packet['cmd']))
-        elif not IR_QUEUE.empty() and utime.ticks_diff(cur_time, IR_QUEUE_EMPTY_TIME) > 1000:
+
+            if packet is None:
+                continue
+            elif packet['cmd'] == IR_START_CMD:
+                IR_STARTED = True
+                print("[IR] Match Started")
+            else:
+                IR_STARTED = False
+                print("[IR] Match Stopped")
+
+        elif not IR_QUEUE.empty() and utime.ticks_diff(cur_time, IR_QUEUE_EMPTY_TIME) > 200:
             # if the queue has items but not a full ir message
             # assume we recived an incomplete message and drop the queue
             print("Incomplete message recieved, dropping ir packet")
             while not IR_QUEUE.empty():
                 IR_QUEUE.get()
-
-"""
-@file ir_decode.py
-@author Josh Anderson
-@author Ethan Czuppa
-
-This file contains code for decoding ir timestamps
-"""
 
 def evt_time_to_pulse_len(ir_evt_times):
     """Convert a list of absolute ir transition times to a list alternating between
