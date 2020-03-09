@@ -1,5 +1,5 @@
 import VL53L0X
-from machine import I2C
+import i2c
 
 
 class TOF:
@@ -10,4 +10,6 @@ class TOF:
     def read(self):
         return self.sensor.read()
 
-Left = TOF()
+Left = TOF(i2c.Bus1)
+Center = TOF(i2c.Bus2)
+Right = TOF(i2c.Bus3)
