@@ -1,6 +1,7 @@
 
 import pyb
 import utime
+import task_share
 
 IR_TMR_FREQ = 1000000
 IR_TM_CH_1 = None
