@@ -91,6 +91,9 @@ class TurnAngle:
         if self._fix_overshoot == True or not self.complete(left_enc):
             speed = self._cntrl.ploop(left_enc.ticks)
 
+        if speed == 0:
+            return speed, -speed
+
         dir = speed/abs(speed)
         if self._max_rate is not None and speed > self._max_rate:
             speed = dir*self._max_rate

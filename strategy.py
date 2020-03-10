@@ -10,6 +10,7 @@ import line_sensor
 import drive
 import encoder
 import tof
+import ir
 
 Strategy = None
 
@@ -31,6 +32,12 @@ def handler():
 
     while True:
         yield(0)
+
+        if not ir.IR_STARTED:
+            drive.change_command(None)
+            Strategy.reset()
+            continue
+
         tof_ang = tof.read()
         now = utime.ticks_ms()
 
@@ -69,14 +76,17 @@ class BasicStrategy:
     def __init__(self):
         self.current_state = self.drive_forward_init
 
+    def reset(self):
+        self.current_state = self.drive_forward_init
+
     def drive_forward_init(self, sens_state):
-        drive.change_command(drive.StraightVelocity(0.018))
+        drive.change_command(drive.StraightVelocity(0.016))
         self.current_state = self.drive_forward
         return True
 
     def drive_forward(self, sens_state):
         drive.DriveCommand.seek(sens_state.enemy_vec)
-        if sens_state.line_sens[0] < 1.25 and sens_state.line_sens[1] < 1.25:
+        if sens_state.line_sens[0] < 1.25 and sens_state.line_sens[1] < 1.1:
             return False
 
         # Pick rotation direction based off of line sensor that trips
@@ -93,7 +103,7 @@ class BasicStrategy:
         #print("[BACK]", encoder.ticks_to_in(sens_state.l_enc.ticks))
         if encoder.ticks_to_in(sens_state.l_enc.ticks) > -6:
             return False
-        drive.change_command(drive.TurnAngle(self.dir*125, max_rate=0.40))
+        drive.change_command(drive.TurnAngle(self.dir*125, max_rate=40))
         self.current_state = self.turn_around
         return True
 

@@ -25,7 +25,7 @@ class TOF:
     def read(self):
         """ Read distance in mm from sensors """
         val = self.sensor.read()
-        if val > 2000:
+        if val > 1000:
             val = 0
         return val
 
