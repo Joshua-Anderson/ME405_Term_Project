@@ -11,6 +11,10 @@ import pyb
 ## This is specific to our SUMO bot with 2 in diameter wheels and specific encoder ticks/rev
 INCHES_PER_TICK = 0.006413900601
 
+## This is specific to our SUMO bot with 2 in diameter wheels and specific encoder ticks/rev
+# Assumming the bot is spinning in place
+DEG_PER_TICK = 0.1
+
 class Encoder:
     """ This class allows users to access encoder readings. It automatically
     configures the encoder based on the user-given arguments. """
@@ -88,6 +92,19 @@ def in_to_ticks(inches):
 
     @param inches distance in inches"""
     return inches/INCHES_PER_TICK
+
+def tick_to_deg(ticks):
+    """ Assuming bot is spinning in place, encoder ticks to degrees rotation
+
+    @param ticks encoder ticks"""
+
+    return ticks*DEG_PER_TICK
+
+def deg_to_ticks(deg):
+    """  Assuming bot is spinning in place, degree rotation to encoder ticks
+
+    @param deg angle"""
+    return deg/DEG_PER_TICK
 
 ## SUMO Bot Left Motor
 Left = Encoder(pyb.Pin.board.PC6, pyb.Pin.board.PC7, pyb.Pin.AF3_TIM8, 8)
