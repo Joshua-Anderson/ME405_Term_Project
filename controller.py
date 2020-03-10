@@ -42,23 +42,23 @@ CLAMP = 0.25
 class PIcontrol:
     """
     This class implements a simple PI cruise control shceme for the ME 405 Nucleo dev board
-    Contains methods to change Kp, Ki, and the target speed. 
+    Contains methods to change Kp, Ki, and the target speed.
     """
 
     def __init__(self,kp,ki,vel):
         """
         Sets up PI controller
         """
-        
+
         self._kp = kp
         self._ki = ki
         self._vel = vel
         self.i_err = vel
-        
 
-    def pi_loop(self,v_act,dt):
+
+    def piloop(self,v_act,dt):
         """
-        Cruise Control Loop with duty cycle saturation. Returns the total saturated 
+        Cruise Control Loop with duty cycle saturation. Returns the total saturated
         actuator command
         """
         # Compute actual velocity and Error

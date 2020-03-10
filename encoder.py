@@ -7,9 +7,10 @@
 # @author Josh Anderson
 
 import pyb
+import utime
 
 ## This is specific to our SUMO bot with 2 in diameter wheels and specific encoder ticks/rev
-INCHES_PER_TICK = 0.006413900601
+INCHES_PER_TICK = 0.0064
 
 ## This is specific to our SUMO bot with 2 in diameter wheels and specific encoder ticks/rev
 # Assumming the bot is spinning in place
@@ -72,13 +73,37 @@ class Encoder:
         """ Resets the encoder position variable to zero. """
         self._pos = 0
 
+class EncoderState:
+    def __init__(self, ticks, time_ms, vel_ticks, dt):
+        self.ticks = ticks
+        self.time_ms = time_ms
+        self.vel_ticks_ms = vel_ticks
+        self.dt = dt
+
+LastLState = EncoderState(0, 0, 0, 0)
+LastRState = EncoderState(0, 0, 0, 0)
+
 def read():
     """ Task used to read encoders """
-    global LeftVal
-    global RightVal
+    global LastLState
+    global LastRState
 
-    LeftVal = Left.read()
-    RightVal = Right.read()
+    now = utime.ticks_ms()
+    dt = utime.ticks_diff(now, LastLState.time_ms)
+
+    # Avoid noise from small timesteps with small tick changes
+    if dt < 2:
+        return LastLState, LastLState
+
+    l_ticks = Left.read()
+    r_ticks = Right.read()
+    LState = EncoderState(l_ticks, now, (l_ticks-LastLState.ticks)/dt, dt)
+    RState = EncoderState(r_ticks, now, (r_ticks-LastRState.ticks)/dt, dt)
+
+    LastLState = LState
+    LastRState = RState
+
+    return LState, RState
 
 def ticks_to_in(ticks):
     """ Convert from encoder ticks to inches
@@ -93,7 +118,7 @@ def in_to_ticks(inches):
     @param inches distance in inches"""
     return inches/INCHES_PER_TICK
 
-def tick_to_deg(ticks):
+def ticks_to_deg(ticks):
     """ Assuming bot is spinning in place, encoder ticks to degrees rotation
 
     @param ticks encoder ticks"""
@@ -109,11 +134,5 @@ def deg_to_ticks(deg):
 ## SUMO Bot Left Motor
 Left = Encoder(pyb.Pin.board.PC6, pyb.Pin.board.PC7, pyb.Pin.AF3_TIM8, 8)
 
-## SUMO Bot Left Encoder Value
-LeftVal = 0
-
 ## SUMO Bot Right Motor
 Right = Encoder(pyb.Pin.board.PB6, pyb.Pin.board.PB7, pyb.Pin.AF2_TIM4, 4, invert=True)
-
-## SUMO Bot Right Encoder Value
-RightVal = 0

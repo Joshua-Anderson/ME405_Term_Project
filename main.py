@@ -21,9 +21,9 @@ if __name__ == '__main__':
     ir.init()
 
 
-    drive.DriveCommand = drive.TurnAngle(90)
+    drive.DriveCommand = drive.StraightVelocity(0.018)
 
-    drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 10,
+    drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 50,
                         profile = True, trace = False)
     ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 1, period = 10,
                         profile = True, trace = False)

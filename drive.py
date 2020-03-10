@@ -13,34 +13,47 @@ import motor_driver
 
 DriveCommand = None
 
-class ForwardDistance:
+class StraightDistance:
     def __init__(self, dist_inches, fix_overshoot=False):
         self._dist_ticks = encoder.in_to_ticks(dist_inches)
         self._fix_overshoot = fix_overshoot
         self._distance_remaining_ticks = self._dist_ticks
         self._cntrl = controller.PControl(0.1, self._dist_ticks)
 
-    def step(self):
+    def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
         left_speed = right_speed = 0
 
-        if self._fix_overshoot == True or encoder.LeftVal < self._dist_ticks:
-            left_speed = self._cntrl.ploop(encoder.LeftVal)
+        if self._fix_overshoot == True or left_enc.ticks < self._dist_ticks:
+            left_speed = self._cntrl.ploop(left_enc.ticks)
 
-        if self._fix_overshoot == True or encoder.RightVal < self._dist_ticks:
-            right_speed = self._cntrl.ploop(encoder.RightVal)
+        if self._fix_overshoot == True or right_enc.ticks < self._dist_ticks:
+            right_speed = self._cntrl.ploop(right_enc.ticks)
 
         return left_speed, right_speed
 
-    def dist_remaining_in(self):
+    def dist_remaining_in(self, left_enc, right_enc):
         """ Get distance remaining of movement in inches """
-        left_dist = encoder.ticks_to_in(self._dist_ticks - encoder.LeftVal)
-        right_dist = encoder.ticks_to_in(self._dist_ticks - encoder.RightVal)
+        left_dist = encoder.ticks_to_in(self._dist_ticks - left_enc.ticks)
+        right_dist = encoder.ticks_to_in(self._dist_ticks - right_enc.ticks)
         return left_dist, right_dist
 
     def complete(self):
         """ Checks if movement is complete """
         return encoder.LeftVal >= self._dist_ticks and encoder.RightVal >= self._dist_ticks
+
+class StraightVelocity:
+    def __init__(self, vel_in_ms):
+        self._vel_ticks_ms = encoder.in_to_ticks(vel_in_ms)
+        self._cntrl_left = controller.PIcontrol(12.0, 0.05, self._vel_ticks_ms)
+        self._cntrl_right = controller.PIcontrol(12.0, 0.05, self._vel_ticks_ms)
+
+    def step(self, left_enc, right_enc):
+        """ Calculate motor speeds to execute movement """
+
+        left_speed = self._cntrl_left.piloop(left_enc.vel_ticks_ms, left_enc.dt)
+        right_speed = self._cntrl_right.piloop(right_enc.vel_ticks_ms, right_enc.dt)
+        return left_speed, right_speed
 
 class TurnAngle:
     """ Turn the SUMO bot a given angle clockwise.
@@ -53,18 +66,18 @@ class TurnAngle:
         self._distance_remaining_ticks = self._dist_ticks
         self._cntrl = controller.PControl(0.1, self._dist_ticks)
 
-    def step(self):
+    def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
         speed = 0
 
-        if self._fix_overshoot == True or encoder.LeftVal < self._dist_ticks:
-            speed = self._cntrl.ploop(encoder.LeftVal)
+        if self._fix_overshoot == True or left_enc.ticks < self._dist_ticks:
+            speed = self._cntrl.ploop(left_enc.ticks)
 
         return speed, -speed
 
-    def dist_remaining_deg(self):
+    def dist_remaining_deg(self, left_enc, right_enc):
         """ Get distance remaining of movement in inches """
-        return encoder.ticks_to_deg(self._dist_ticks - encoder.LeftVal)
+        return encoder.ticks_to_deg(self._dist_ticks - left_enc.ticks)
 
     def complete(self):
         """ Checks if movement is complete """
@@ -88,7 +101,7 @@ def handler():
 
     while True:
         yield(0)
-        encoder.read()
+        left_enc, right_enc = encoder.read()
 
         # Stop the motors if there is no currently active command
         if DriveCommand is None:
@@ -97,9 +110,9 @@ def handler():
             motor_driver.Right.set_duty_cycle(0)
             continue
 
-        left_speed, right_speed = DriveCommand.step()
+        left_speed, right_speed = DriveCommand.step(left_enc, right_enc)
         # print("[DRIVE]", DriveCommand.dist_remaining_in(), "inches remaining")
-        # print("[DRIVE]", left_speed, " Left Motor", encoder.LeftVal, "Left Encoder")
-        # print("[DRIVE]", right_speed, " Right Motor", encoder.RightVal, "Right Encoder")
+        print("[DRIVE]", left_speed, " Left Motor", left_enc.vel_ticks_ms, "Left Vel", DriveCommand._vel_ticks_ms, "Vel Target")
+        print("[DRIVE]", right_speed, " Right Motor", right_enc.vel_ticks_ms, "Right Vel", DriveCommand._vel_ticks_ms, "Vel Target")
         motor_driver.Left.set_duty_cycle(left_speed)
         motor_driver.Right.set_duty_cycle(right_speed)
