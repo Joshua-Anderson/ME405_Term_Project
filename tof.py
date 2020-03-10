@@ -9,6 +9,7 @@
 
 import VL53L0X
 import i2c
+import utime
 
 
 class TOF:
@@ -23,7 +24,46 @@ class TOF:
 
     def read(self):
         """ Read distance in mm from sensors """
-        return self.sensor.read()
+        val = self.sensor.read()
+        if val > 2000:
+            val = 0
+        return val
+
+TofAng = None
+TofLastRead = 0
+
+def read():
+    global TofAng
+    global TofLastRead
+
+    now = utime.ticks_ms()
+    dt = now - TofLastRead
+
+    # Only return new value every 40 Ms
+    if dt < 200:
+        return TofAng
+
+    print("[TOF] READ!")
+
+    l = Left.read()
+    c = Center.read()
+    r = Right.read()
+    sum = l + c + r
+
+    TofLastRead = now
+
+    if sum == 0:
+        TofAng = None
+        return None
+
+    TofAng = -20*(l/sum) + 20*(r/sum)
+    return TofAng
+
+def ang_to_vec(deg):
+    if deg is None:
+        return None
+    return deg/20.0
+
 
 ## Left Time of Flight Sensor
 Left = TOF(i2c.Bus1)

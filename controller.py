@@ -69,7 +69,8 @@ class PIcontrol:
         self.i_err += v_err
         i_cmd = self._ki * self.i_err * dt
         if i_cmd > DUTY_MAX or i_cmd < -DUTY_MAX:
-            i_cmd *= CLAMP
+            self.i_err *= CLAMP
+
         # Total Actuator Command and Saturation
         act_cmd = p_cmd + i_cmd
         if act_cmd > DUTY_MAX:
@@ -94,5 +95,5 @@ class PIcontrol:
 
     def set_vel(self,crusing_speed):
         """ Allows the user to change the proportional gain."""
-        self._kp = crusing_speed
+        self._vel = crusing_speed
 

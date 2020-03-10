@@ -9,26 +9,38 @@ import utime
 import line_sensor
 import drive
 import encoder
+import tof
 
 Strategy = None
 
 class SensorState:
-    def __init__(self, line_sens, l_enc, r_enc, time_ms, dt_ms):
+    def __init__(self, line_sens, l_enc, r_enc, enemy_vec, time_ms, dt_ms):
         self.line_sens = line_sens
         self.time_ms = time_ms
         self.dt_ms = dt_ms
         self.l_enc = l_enc
         self.r_enc = r_enc
+        self.enemy_vec = enemy_vec
 
 def handler():
-    last_state = SensorState([0,0,0,0], None, None, utime.ticks_ms, 0)
+    last_state = SensorState([0,0,0,0], None, None, None, utime.ticks_ms, 0)
     last_lsens = [None, None, None, None]
+
+
+    last_l_enc, last_r_enc = encoder.read()
 
     while True:
         yield(0)
+        #tof_ang = tof.read()
+        tof_ang = None
+        #print("[TOF]", t)
         now = utime.ticks_ms()
-        l_enc, r_enc = encoder.read()
-        state = SensorState([0,0,0,0], l_enc, r_enc, 0, 0)
+
+        l_enc, r_enc = encoder.read(last_l_state=last_l_enc, last_r_state=last_r_enc)
+        last_l_enc = l_enc
+        last_r_enc = r_enc
+
+        state = SensorState([0,0,0,0], l_enc, r_enc, tof.ang_to_vec(tof_ang), 0, 0)
 
         if line_sensor.FrontLeft.read():
             if last_lsens[0] is None:
@@ -60,14 +72,15 @@ class BasicStrategy:
         self.current_state = self.drive_forward_init
 
     def drive_forward_init(self, sens_state):
-        drive.DriveCommand = drive.StraightVelocity(0.018)
+        drive.change_command(drive.StraightVelocity(0.018))
         self.current_state = self.drive_forward
         return True
 
     def drive_forward(self, sens_state):
+        drive.DriveCommand.seek(sens_state.enemy_vec)
         if sens_state.line_sens[0] < 1.5 and sens_state.line_sens[1] < 1.5:
             return False
-        drive.DriveCommand = drive.StraightVelocity(-0.018)
+        drive.change_command(drive.StraightVelocity(-0.018))
         self.current_state = self.drive_backwards
         return True
 
@@ -76,17 +89,15 @@ class BasicStrategy:
         #print("[BACK]", encoder.ticks_to_in(sens_state.l_enc.ticks))
         if encoder.ticks_to_in(sens_state.l_enc.ticks) > -6:
             return False
-        drive.DriveCommand = drive.TurnAngle(75)
+        drive.change_command(drive.TurnAngle(75))
         self.current_state = self.turn_around
         return True
 
 
     def turn_around(self, sens_state):
         if not drive.DriveCommand.complete(sens_state.l_enc):
-            print("[TURN] Not Done!")
             return False
         self.current_state = self.drive_forward_init
-        print("[TURN] Done!")
         return False
 
     def step(self, sens_state):

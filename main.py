@@ -13,6 +13,7 @@ import gc
 import ir
 import drive
 import motor_driver
+import strategy
 
 from micropython import alloc_emergency_exception_buf
 alloc_emergency_exception_buf (100)
@@ -20,15 +21,17 @@ alloc_emergency_exception_buf (100)
 if __name__ == '__main__':
     ir.init()
 
+    strategy.Strategy = strategy.BasicStrategy()
 
-    drive.DriveCommand = drive.StraightVelocity(0.018)
-
-    drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 50,
+    drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 20,
                         profile = True, trace = False)
-    ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 1, period = 10,
+    strategy_task = cotask.Task(strategy.handler, name = 'Strategy Task', priority = 1, period = 15,
+                        profile = True, trace = False)
+    ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 2, period = 10,
                         profile = True, trace = False)
 
     cotask.task_list.append(drive_task)
+    cotask.task_list.append(strategy_task)
     cotask.task_list.append(ir_task)
 
     # Python's memory management for unused variables

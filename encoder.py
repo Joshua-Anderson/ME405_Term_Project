@@ -80,39 +80,22 @@ class EncoderState:
         self.vel_ticks_ms = vel_ticks
         self.dt = dt
 
-LastLState = EncoderState(0, 0, 0, 0)
-LastRState = EncoderState(0, 0, 0, 0)
-
-def read():
+def read(last_l_state=EncoderState(0, 0, 0, 0), last_r_state=EncoderState(0, 0, 0, 0)):
     """ Task used to read encoders """
-    global LastLState
-    global LastRState
 
     now = utime.ticks_ms()
-    dt = utime.ticks_diff(now, LastLState.time_ms)
-
-    # Avoid noise from small timesteps with small tick changes
-    if dt < 2:
-        return LastLState, LastLState
+    dt = utime.ticks_diff(now, last_l_state.time_ms)
 
     l_ticks = Left.read()
     r_ticks = Right.read()
-    LState = EncoderState(l_ticks, now, (l_ticks-LastLState.ticks)/dt, dt)
-    RState = EncoderState(r_ticks, now, (r_ticks-LastRState.ticks)/dt, dt)
-
-    LastLState = LState
-    LastRState = RState
+    LState = EncoderState(l_ticks, now, (l_ticks-last_r_state.ticks)/dt, dt)
+    RState = EncoderState(r_ticks, now, (r_ticks-last_r_state.ticks)/dt, dt)
 
     return LState, RState
 
 def reset():
-    global LastLState
-    global LastRState
-
     Left.zero()
     Right.zero()
-    LastLState = EncoderState(0, 0, 0, 0)
-    LastRState = EncoderState(0, 0, 0, 0)
 
 def ticks_to_in(ticks):
     """ Convert from encoder ticks to inches
