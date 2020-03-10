@@ -80,18 +80,18 @@ class BasicStrategy:
         self.current_state = self.drive_forward_init
 
     def drive_forward_init(self, sens_state):
-        drive.change_command(drive.StraightVelocity(0.016))
+        drive.change_command(drive.StraightVelocity(0.014))
         self.current_state = self.drive_forward
         return True
 
     def drive_forward(self, sens_state):
         drive.DriveCommand.seek(sens_state.enemy_vec)
-        if sens_state.line_sens[0] < 1.25 and sens_state.line_sens[1] < 1.1:
+        if sens_state.line_sens[0] < 1.1 and sens_state.line_sens[1] < 1.1:
             return False
 
         # Pick rotation direction based off of line sensor that trips
         self.dir = 1
-        if sens_state.line_sens[0] < 1.25:
+        if sens_state.line_sens[0] < 1.1:
             self.dir = -1
 
         drive.change_command(drive.StraightVelocity(-0.018))
@@ -103,7 +103,7 @@ class BasicStrategy:
         #print("[BACK]", encoder.ticks_to_in(sens_state.l_enc.ticks))
         if encoder.ticks_to_in(sens_state.l_enc.ticks) > -6:
             return False
-        drive.change_command(drive.TurnAngle(self.dir*125, max_rate=40))
+        drive.change_command(drive.TurnAngle(self.dir*125, max_rate=20))
         self.current_state = self.turn_around
         return True
 
