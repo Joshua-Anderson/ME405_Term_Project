@@ -64,13 +64,14 @@ class TurnAngle:
         self._dist_ticks = encoder.deg_to_ticks(degrees)
         self._fix_overshoot = fix_overshoot
         self._distance_remaining_ticks = self._dist_ticks
-        self._cntrl = controller.PControl(0.1, self._dist_ticks)
+        self._cntrl = controller.PControl(0.25, self._dist_ticks)
+        self.cw = degrees >= 0
 
     def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
         speed = 0
 
-        if self._fix_overshoot == True or left_enc.ticks < self._dist_ticks:
+        if self._fix_overshoot == True or not self.complete(left_enc):
             speed = self._cntrl.ploop(left_enc.ticks)
 
         return speed, -speed
@@ -79,21 +80,19 @@ class TurnAngle:
         """ Get distance remaining of movement in inches """
         return encoder.ticks_to_deg(self._dist_ticks - left_enc.ticks)
 
-    def complete(self):
+    def complete(self, enc):
         """ Checks if movement is complete """
-        return encoder.LeftVal >= self._dist_ticks
+        if self.cw:
+            print("[DRIVE]", enc.ticks, ">=", self._dist_ticks)
+            return enc.ticks >= self._dist_ticks
+        else:
+            return enc.ticks <= self._dist_ticks
 
 def change_command(cmd):
     global DriveCommand
 
     motor_driver.Left.set_duty_cycle(0)
     motor_driver.Right.set_duty_cycle(0)
-
-    encoder.Left.zero()
-    encoder.LeftVal = 0
-    encoder.Right.zero()
-    encoder.RightVal = 0
-
     DriveCommand = cmd
 
 def handler():
@@ -105,14 +104,14 @@ def handler():
 
         # Stop the motors if there is no currently active command
         if DriveCommand is None:
-            print("[DRIVE] No command, stopping motors")
+            # print("[DRIVE] No command, stopping motors")
             motor_driver.Left.set_duty_cycle(0)
             motor_driver.Right.set_duty_cycle(0)
             continue
 
         left_speed, right_speed = DriveCommand.step(left_enc, right_enc)
         # print("[DRIVE]", DriveCommand.dist_remaining_in(), "inches remaining")
-        print("[DRIVE]", left_speed, " Left Motor", left_enc.vel_ticks_ms, "Left Vel", DriveCommand._vel_ticks_ms, "Vel Target")
-        print("[DRIVE]", right_speed, " Right Motor", right_enc.vel_ticks_ms, "Right Vel", DriveCommand._vel_ticks_ms, "Vel Target")
+        # print("[DRIVE]", left_speed, " Left Motor", left_enc.vel_ticks_ms, "Left Vel", DriveCommand._vel_ticks_ms, "Vel Target")
+        # print("[DRIVE]", right_speed, " Right Motor", right_enc.vel_ticks_ms, "Right Vel", DriveCommand._vel_ticks_ms, "Vel Target")
         motor_driver.Left.set_duty_cycle(left_speed)
         motor_driver.Right.set_duty_cycle(right_speed)

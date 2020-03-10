@@ -40,9 +40,8 @@ class LineSense:
             return True
         return False
 
-
 ## Sumo Bot Line Sensors
-fr = LineSense(pyb.Pin.board.PA4, pyb.Pin.OUT_PP)
-fl = LineSense(pyb.Pin.board.PC4, pyb.Pin.OUT_PP)
-br = LineSense(pyb.Pin.board.PA3, pyb.Pin.OUT_PP)
-bl = LineSense(pyb.Pin.board.PA5, pyb.Pin.OUT_PP)
+FrontRight = LineSense(pyb.Pin.board.PA4, pyb.Pin.OUT_PP)
+FrontLeft = LineSense(pyb.Pin.board.PC4, pyb.Pin.OUT_PP)
+BackRight = LineSense(pyb.Pin.board.PA3, pyb.Pin.OUT_PP)
+BackLeft = LineSense(pyb.Pin.board.PA5, pyb.Pin.OUT_PP)

@@ -105,6 +105,15 @@ def read():
 
     return LState, RState
 
+def reset():
+    global LastLState
+    global LastRState
+
+    Left.zero()
+    Right.zero()
+    LastLState = EncoderState(0, 0, 0, 0)
+    LastRState = EncoderState(0, 0, 0, 0)
+
 def ticks_to_in(ticks):
     """ Convert from encoder ticks to inches
 
