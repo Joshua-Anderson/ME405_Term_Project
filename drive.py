@@ -45,8 +45,8 @@ class StraightDistance:
 class StraightVelocity:
     def __init__(self, vel_in_ms):
         self._vel_ticks_ms = encoder.in_to_ticks(vel_in_ms)
-        self._cntrl_left = controller.PIcontrol(12.0, 0.02, self._vel_ticks_ms)
-        self._cntrl_right = controller.PIcontrol(12.0, 0.02, self._vel_ticks_ms)
+        self._cntrl_left = controller.PIcontrol(12.0, 0.05, self._vel_ticks_ms)
+        self._cntrl_right = controller.PIcontrol(12.0, 0.05, self._vel_ticks_ms)
         self.seek_amnt = 0
 
     def seek(self, amount):
@@ -58,17 +58,18 @@ class StraightVelocity:
     def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
 
-        # if self.seek_amnt < 0:
-        #     self._cntrl_left.set_vel(self._vel_ticks_ms - self.seek_amnt)
-        #     self._cntrl_right.set_vel(self._vel_ticks_ms)
-        # else:
-        #     self._cntrl_left.set_vel(self._vel_ticks_ms)
-        #     self._cntrl_right.set_vel(self._vel_ticks_ms - self.seek_amnt)
+        if self.seek_amnt < 0:
+            self._cntrl_left.set_vel(self._vel_ticks_ms)
+            self._cntrl_right.set_vel(self._vel_ticks_ms - self.seek_amnt)
+        else:
+            self._cntrl_left.set_vel(self._vel_ticks_ms - self.seek_amnt)
+            self._cntrl_right.set_vel(self._vel_ticks_ms)
 
+        print(self._cntrl_left._vel, self._cntrl_right._vel, self.seek_amnt)
         left_speed = self._cntrl_left.piloop(left_enc.vel_ticks_ms, left_enc.dt)
         right_speed = self._cntrl_right.piloop(right_enc.vel_ticks_ms, right_enc.dt)
 
-        print("[DRIVE]", left_speed, "l", right_speed, "r", left_enc.vel_ticks_ms, "lv", right_enc.vel_ticks_ms, "rv", self._vel_ticks_ms)
+        # print("[DRIVE]", left_speed, "l", right_speed, "r", left_enc.vel_ticks_ms, "lv", right_enc.vel_ticks_ms, "rv", self._vel_ticks_ms)
         return left_speed, right_speed
 
 class TurnAngle:
@@ -99,7 +100,6 @@ class TurnAngle:
     def complete(self, enc):
         """ Checks if movement is complete """
         if self.cw:
-            print("[DRIVE]", enc.ticks, ">=", self._dist_ticks)
             return enc.ticks >= self._dist_ticks
         else:
             return enc.ticks <= self._dist_ticks

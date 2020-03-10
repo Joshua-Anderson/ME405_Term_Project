@@ -40,10 +40,8 @@ def read():
     dt = now - TofLastRead
 
     # Only return new value every 40 Ms
-    if dt < 200:
+    if dt < 100:
         return TofAng
-
-    print("[TOF] READ!")
 
     l = Left.read()
     c = Center.read()

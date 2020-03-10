@@ -88,7 +88,7 @@ def read(last_l_state=EncoderState(0, 0, 0, 0), last_r_state=EncoderState(0, 0, 
 
     l_ticks = Left.read()
     r_ticks = Right.read()
-    LState = EncoderState(l_ticks, now, (l_ticks-last_r_state.ticks)/dt, dt)
+    LState = EncoderState(l_ticks, now, (l_ticks-last_l_state.ticks)/dt, dt)
     RState = EncoderState(r_ticks, now, (r_ticks-last_r_state.ticks)/dt, dt)
 
     return LState, RState

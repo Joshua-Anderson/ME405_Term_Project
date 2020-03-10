@@ -31,9 +31,7 @@ def handler():
 
     while True:
         yield(0)
-        #tof_ang = tof.read()
-        tof_ang = None
-        #print("[TOF]", t)
+        tof_ang = tof.read()
         now = utime.ticks_ms()
 
         l_enc, r_enc = encoder.read(last_l_state=last_l_enc, last_r_state=last_r_enc)
