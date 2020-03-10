@@ -53,7 +53,7 @@ class StraightVelocity:
         if amount is None:
             self.seek_amnt = 0
             return
-        self.seek_amnt = amount
+        self.seek_amnt = 4*amount
 
     def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
@@ -65,7 +65,6 @@ class StraightVelocity:
             self._cntrl_left.set_vel(self._vel_ticks_ms)
             self._cntrl_right.set_vel(self._vel_ticks_ms - abs(self.seek_amnt))
 
-        print(self._cntrl_left._vel, self._cntrl_right._vel, self.seek_amnt)
         left_speed = self._cntrl_left.piloop(left_enc.vel_ticks_ms, left_enc.dt)
         right_speed = self._cntrl_right.piloop(right_enc.vel_ticks_ms, right_enc.dt)
 
@@ -77,12 +76,13 @@ class TurnAngle:
 
     To spin in place, we run a p-controller on one wheel and mirror the speed on the other wheel """
 
-    def __init__(self, degrees, fix_overshoot=False):
+    def __init__(self, degrees, max_rate=None, fix_overshoot=False):
         self._dist_ticks = encoder.deg_to_ticks(degrees)
         self._fix_overshoot = fix_overshoot
         self._distance_remaining_ticks = self._dist_ticks
         self._cntrl = controller.PControl(0.25, self._dist_ticks)
-        self.cw = degrees >= 0
+        self._cw = degrees >= 0
+        self._max_rate = max_rate
 
     def step(self, left_enc, right_enc):
         """ Calculate motor speeds to execute movement """
@@ -90,6 +90,10 @@ class TurnAngle:
 
         if self._fix_overshoot == True or not self.complete(left_enc):
             speed = self._cntrl.ploop(left_enc.ticks)
+
+        dir = speed/abs(speed)
+        if self._max_rate is not None and speed > self._max_rate:
+            speed = dir*self._max_rate
 
         return speed, -speed
 
@@ -99,7 +103,7 @@ class TurnAngle:
 
     def complete(self, enc):
         """ Checks if movement is complete """
-        if self.cw:
+        if self._cw:
             return enc.ticks >= self._dist_ticks
         else:
             return enc.ticks <= self._dist_ticks

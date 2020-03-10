@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     drive_task = cotask.Task(drive.handler, name = 'Drive Task', priority = 1, period = 20,
                         profile = True, trace = False)
-    strategy_task = cotask.Task(strategy.handler, name = 'Strategy Task', priority = 1, period = 15,
+    strategy_task = cotask.Task(strategy.handler, name = 'Strategy Task', priority = 1, period = 10,
                         profile = True, trace = False)
     ir_task = cotask.Task(ir.handler, name = 'IR Task', priority = 2, period = 50,
                         profile = True, trace = False)
